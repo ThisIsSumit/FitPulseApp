@@ -1,3 +1,5 @@
+import 'package:fitness_app/providers/health_provider.dart';
+import 'package:fitness_app/providers/nutrition_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
@@ -16,29 +18,43 @@ void main() async {
     url: 'https://zbjkyeziunmpdejbgbgg.supabase.co',
     publishableKey: 'sb_publishable_TjkqQ--lZ4M4cRsq_LgslQ_L0FiNSs4',
   );
-  final authprovider = AuthProvider();
-  runApp(ChangeNotifierProvider.value(
-      value: authprovider, child:  FitPulseApp(provider: authprovider)));
+  final authProvider = AuthProvider();
+  final healthProvider = HealthProvider();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: authProvider),
+        ChangeNotifierProvider.value(value: healthProvider),
+        ChangeNotifierProxyProvider<HealthProvider, NutritionProvider>(
+          create: (_) => NutritionProvider(healthProvider: healthProvider),
+          update: (_, health, prev) =>
+              prev ?? NutritionProvider(healthProvider: health),
+        ),
+      ],
+      child: FitPulseApp(authProvider: authProvider),
+    ),
+  );
 }
 
 class FitPulseApp extends StatefulWidget {
-  final AuthProvider provider;
-  const FitPulseApp({super.key, required this.provider});
+  final AuthProvider authProvider;
+  const FitPulseApp({super.key, required this.authProvider});
 
   @override
   State<FitPulseApp> createState() => _FitPulseAppState();
 }
 
 class _FitPulseAppState extends State<FitPulseApp> {
-  // Router created ONCE in State — never recreated on rebuild.
-  // This is what prevents the GlobalKey clash on home screen.
-  late final _router = buildRouter(widget.provider);
+  late final _router = buildRouter(widget.authProvider);
 
   @override
   Widget build(BuildContext context) {
-    // Still watch so GoRouter's refreshListenable triggers
-    // login/logout redirects — but _router itself is not recreated.
-    context.watch<AuthProvider>();
+    // Watch auth so router redirect fires; also start nutrition listener
+    final auth = context.watch<AuthProvider>();
+    if (auth.user != null) {
+      context.read<NutritionProvider>().startListening(auth.user!.id);
+    }
     return MaterialApp.router(
       title: 'FitPulse',
       debugShowCheckedModeBanner: false,
@@ -47,5 +63,3 @@ class _FitPulseAppState extends State<FitPulseApp> {
     );
   }
 }
-
-

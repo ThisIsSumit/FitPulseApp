@@ -149,11 +149,11 @@ class StatCard extends StatelessWidget {
           const Spacer(),
           Text(
             value,
-            textAlign: TextAlign.center,
+            textAlign: TextAlign.start,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 26,
+              fontSize: 24,
               fontWeight: FontWeight.w800,
               color: Colors.white,
             ),

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/health_provider.dart';
 import '../../services/supabase_service.dart';
 import '../../models/models.dart';
 
@@ -78,6 +79,10 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> with TickerPr
       });
       await SB.incrementProfileStats(id: uid, workouts: 1, calories: widget.workout.calories, xp: 100);
       auth.refreshUser();
+      // Update today's burned calories on home screen in real-time
+      if (mounted) {
+        context.read<HealthProvider>().addBurnedCalories(widget.workout.calories);
+      }
     }
     if (mounted) _showCompletion();
   }
