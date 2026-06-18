@@ -1,5 +1,7 @@
 import 'package:fitness_app/providers/health_provider.dart';
 import 'package:fitness_app/providers/nutrition_provider.dart';
+import 'package:fitness_app/providers/settings_provider.dart';
+import 'package:fitness_app/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +15,7 @@ void main() async {
     url: 'https://zbjkyeziunmpdejbgbgg.supabase.co',
     publishableKey: 'sb_publishable_TjkqQ--lZ4M4cRsq_LgslQ_L0FiNSs4',
   );
+  await NotificationService.init();
   final authProvider = AuthProvider();
   final healthProvider = HealthProvider();
 
@@ -21,6 +24,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider.value(value: healthProvider),
+         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProxyProvider<HealthProvider, NutritionProvider>(
           create: (_) => NutritionProvider(healthProvider: healthProvider),
           update: (_, health, prev) =>

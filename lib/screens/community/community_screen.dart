@@ -77,14 +77,16 @@ class _FeedTabState extends State<_FeedTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_posts == null)
+    if (_posts == null) {
       return const Center(
           child: CircularProgressIndicator(color: AppColors.primary));
-    if (_posts!.isEmpty)
+    }
+    if (_posts!.isEmpty) {
       return const EmptyState(
           emoji: '💬',
           title: 'Be the first!',
           subtitle: 'Share your workout or achievement.');
+    }
     return ListView.separated(
       padding: const EdgeInsets.all(20),
       itemCount: _posts!.length,
@@ -281,19 +283,22 @@ class _ChallengesTabState extends State<_ChallengesTab> {
   void initState() {
     super.initState();
     SB.challengesStream().listen((data) {
-      if (mounted)
+      if (mounted) {
         setState(() => _challenges = data.map(Challenge.fromMap).toList());
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_challenges == null)
+    if (_challenges == null) {
       return const Center(
           child: CircularProgressIndicator(color: AppColors.primary));
-    if (_challenges!.isEmpty)
+    }
+    if (_challenges!.isEmpty) {
       return const EmptyState(
           emoji: '🏆', title: 'No challenges', subtitle: 'Check back soon!');
+    }
     final uid = SB.uid ?? '';
     return ListView.separated(
       padding: const EdgeInsets.all(20),
@@ -431,14 +436,16 @@ class _LeaderboardTabState extends State<_LeaderboardTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_users == null)
+    if (_users == null) {
       return const Center(
           child: CircularProgressIndicator(color: AppColors.primary));
-    if (_users!.isEmpty)
+    }
+    if (_users!.isEmpty) {
       return const EmptyState(
           emoji: '🥇',
           title: 'Empty',
           subtitle: 'Start working out to appear here!');
+    }
     final me = SB.uid ?? '';
     return ListView.builder(
       padding: const EdgeInsets.all(20),
