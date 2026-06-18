@@ -1,3 +1,4 @@
+import 'package:fitness_app/models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +12,8 @@ import '../../providers/settings_provider.dart';
 import '../../services/supabase_service.dart';
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+  final AppUser user;
+  const SettingsScreen({super.key, required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +28,7 @@ class SettingsScreen extends StatelessWidget {
         _SettingsTile(
           icon: Icons.person_outline_rounded,
           label: 'Edit Profile',
-          onTap: () => context.push('/profile'),
+          onTap: () => _showEditProfile(context, user),
         ),
         _SettingsTile(
           icon: Icons.lock_outline_rounded,
@@ -148,6 +150,45 @@ class SettingsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 32),
       ]),
+    );
+  }
+
+  void _showEditProfile(BuildContext context, AppUser? user) {
+    final nameCtrl = TextEditingController(text: user?.name ?? '');
+    final bioCtrl = TextEditingController(text: user?.bio ?? '');
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.bgCard,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+            24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
+        child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Edit Profile', style: AppTextStyles.headlineLarge),
+              const SizedBox(height: 20),
+              AppTextField(controller: nameCtrl, label: 'Display Name'),
+              const SizedBox(height: 14),
+              AppTextField(controller: bioCtrl, label: 'Bio', maxLines: 3),
+              const SizedBox(height: 20),
+              GradientButton(
+                  label: 'Save Changes',
+                  onTap: () async {
+                    final uid = SB.uid;
+                    if (uid == null) return;
+                    await SB.updateProfile(uid, {
+                      'name': nameCtrl.text.trim(),
+                      'bio': bioCtrl.text.trim()
+                    });
+                    context.read<AuthProvider>().refreshUser();
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  }),
+            ]),
+      ),
     );
   }
 

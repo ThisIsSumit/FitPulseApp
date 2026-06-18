@@ -51,7 +51,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () => context.push('/settings'),
+            onPressed: () => context.push('/settings', extra: user),
           )
         ],
       ),
@@ -170,52 +170,8 @@ class _ProfileHeader extends StatelessWidget {
           _FollowStat(count: user?.totalWorkouts ?? 0, label: 'Workouts'),
         ]).animate().fadeIn(delay: 250.ms),
 
-        const SizedBox(height: 16),
-        OutlinedButton(
-          onPressed: () => _showEditProfile(context, user),
-          style: OutlinedButton.styleFrom(minimumSize: const Size(180, 44)),
-          child: const Text('Edit Profile'),
-        ).animate().fadeIn(delay: 300.ms),
+       
       ]),
-    );
-  }
-
-  void _showEditProfile(BuildContext context, AppUser? user) {
-    final nameCtrl = TextEditingController(text: user?.name ?? '');
-    final bioCtrl = TextEditingController(text: user?.bio ?? '');
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.bgCard,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(
-            24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-        child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Edit Profile', style: AppTextStyles.headlineLarge),
-              const SizedBox(height: 20),
-              AppTextField(controller: nameCtrl, label: 'Display Name'),
-              const SizedBox(height: 14),
-              AppTextField(controller: bioCtrl, label: 'Bio', maxLines: 3),
-              const SizedBox(height: 20),
-              GradientButton(
-                  label: 'Save Changes',
-                  onTap: () async {
-                    final uid = SB.uid;
-                    if (uid == null) return;
-                    await SB.updateProfile(uid, {
-                      'name': nameCtrl.text.trim(),
-                      'bio': bioCtrl.text.trim()
-                    });
-                    context.read<AuthProvider>().refreshUser();
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  }),
-            ]),
-      ),
     );
   }
 }

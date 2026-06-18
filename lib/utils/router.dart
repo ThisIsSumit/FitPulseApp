@@ -80,7 +80,11 @@ GoRouter buildRouter(AuthProvider authProvider) {
       GoRoute(
         path: '/settings',
         parentNavigatorKey: _rootKey,
-        builder: (_, __) => const SettingsScreen(),
+
+       builder: (context, state) {
+    final user = state.extra as AppUser;
+    return SettingsScreen(user: user);
+  },
       ),
 
       // Shell
