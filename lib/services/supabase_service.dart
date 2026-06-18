@@ -4,11 +4,11 @@ import 'dart:io';
 /// Single entry-point for all Supabase operations.
 class SB {
   static SupabaseClient get client => Supabase.instance.client;
-  static GoTrueClient  get auth   => client.auth;
+  static GoTrueClient get auth => client.auth;
   static SupabaseStorageClient get storage => client.storage;
 
   static String? get uid => auth.currentUser?.id;
-  static User?   get currentUser => auth.currentUser;
+  static User? get currentUser => auth.currentUser;
 
   // ─── Auth ──────────────────────────────────────────────────────────────
   static Stream<AuthState> get authStream => auth.onAuthStateChange;
@@ -58,14 +58,15 @@ class SB {
 
   // ─── Profiles ─────────────────────────────────────────────────────────
   static Future<Map<String, dynamic>?> fetchProfile(String id) async {
-    final res = await client.from('profiles').select().eq('id', id).maybeSingle();
+    final res =
+        await client.from('profiles').select().eq('id', id).maybeSingle();
     return res;
   }
 
   static Stream<Map<String, dynamic>> profileStream(String id) =>
       client.from('profiles').stream(primaryKey: ['id']).eq('id', id).map(
-        (rows) => rows.isNotEmpty ? rows.first : <String, dynamic>{},
-      );
+            (rows) => rows.isNotEmpty ? rows.first : <String, dynamic>{},
+          );
 
   static Future<void> updateProfile(String id, Map<String, dynamic> data) =>
       client.from('profiles').update(data).eq('id', id);
@@ -75,7 +76,8 @@ class SB {
     await storage.from('avatars').upload(
           path,
           file,
-          fileOptions: const FileOptions(upsert: true, contentType: 'image/jpeg'),
+          fileOptions:
+              const FileOptions(upsert: true, contentType: 'image/jpeg'),
         );
     final url = storage.from('avatars').getPublicUrl(path);
     await updateProfile(id, {'photo_url': url});
@@ -127,25 +129,30 @@ class SB {
       });
 
   // ─── Posts ────────────────────────────────────────────────────────────
-  static Stream<List<Map<String, dynamic>>> postsStream() =>
-      client
-          .from('posts')
-          .stream(primaryKey: ['id'])
-          .order('created_at', ascending: false)
-          .limit(50);
+  static Stream<List<Map<String, dynamic>>> postsStream() => client
+      .from('posts')
+      .stream(primaryKey: ['id'])
+      .order('created_at', ascending: false)
+      .limit(50);
 
-  static Future<Map<String, dynamic>> createPost(Map<String, dynamic> data) async {
-    final res = await client.from('posts').insert({
-      ...data,
-      'uid': uid,
-      'likes': [],
-      'comments_count': 0,
-      'created_at': DateTime.now().toIso8601String(),
-    }).select().single();
+  static Future<Map<String, dynamic>> createPost(
+      Map<String, dynamic> data) async {
+    final res = await client
+        .from('posts')
+        .insert({
+          ...data,
+          'uid': uid,
+          'likes': [],
+          'comments_count': 0,
+          'created_at': DateTime.now().toIso8601String(),
+        })
+        .select()
+        .single();
     return res;
   }
 
-  static Future<void> toggleLike(String postId, List<String> currentLikes) async {
+  static Future<void> toggleLike(
+      String postId, List<String> currentLikes) async {
     final me = uid!;
     final updated = currentLikes.contains(me)
         ? (List<String>.from(currentLikes)..remove(me))
@@ -176,23 +183,28 @@ class SB {
   }
 
   static Future<String?> uploadPostImage(File file) async {
-    final path = '${uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    await storage.from('post-images').upload(
-          path,
-          file,
-          fileOptions: const FileOptions(contentType: 'image/jpeg'),
-        );
-    return storage.from('post-images').getPublicUrl(path);
+    try {
+      final path = '${uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      await storage.from('post-images').upload(
+            path,
+            file,
+            fileOptions:
+                const FileOptions(contentType: 'image/jpeg', upsert: true),
+          );
+      final url = storage.from('post-images').getPublicUrl(path);
+      return url;
+    } catch (e) {
+      print('❌ Image upload failed: $e');
+      return null;
+    }
   }
 
   // ─── Challenges ───────────────────────────────────────────────────────
   static Stream<List<Map<String, dynamic>>> challengesStream() =>
-      client
-          .from('challenges')
-          .stream(primaryKey: ['id'])
-          .order('start_date');
+      client.from('challenges').stream(primaryKey: ['id']).order('start_date');
 
-  static Future<void> joinChallenge(String challengeId, List<String> current) async {
+  static Future<void> joinChallenge(
+      String challengeId, List<String> current) async {
     final me = uid!;
     if (current.contains(me)) return;
     await client.from('challenges').update({
@@ -201,19 +213,17 @@ class SB {
   }
 
   // ─── Leaderboard ──────────────────────────────────────────────────────
-  static Future<List<Map<String, dynamic>>> fetchLeaderboard() =>
-      client
-          .from('profiles')
-          .select()
-          .order('total_calories_burned', ascending: false)
-          .limit(20);
+  static Future<List<Map<String, dynamic>>> fetchLeaderboard() => client
+      .from('profiles')
+      .select()
+      .order('total_calories_burned', ascending: false)
+      .limit(20);
 
-  static Stream<List<Map<String, dynamic>>> leaderboardStream() =>
-      client
-          .from('profiles')
-          .stream(primaryKey: ['id'])
-          .order('total_calories_burned', ascending: false)
-          .limit(20);
+  static Stream<List<Map<String, dynamic>>> leaderboardStream() => client
+      .from('profiles')
+      .stream(primaryKey: ['id'])
+      .order('total_calories_burned', ascending: false)
+      .limit(20);
 
   // ─── Increment helpers ────────────────────────────────────────────────
   static Future<void> incrementProfileStats({
@@ -242,7 +252,8 @@ class SB {
         'difficulty': 'Intermediate',
         'duration': 45,
         'calories': 380,
-        'image': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400',
+        'image':
+            'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400',
         'exercises': [
           {'name': 'Push-ups', 'sets': 4, 'reps': 15, 'rest': 60},
           {'name': 'Squats', 'sets': 4, 'reps': 20, 'rest': 60},
@@ -257,7 +268,8 @@ class SB {
         'difficulty': 'Advanced',
         'duration': 30,
         'calories': 450,
-        'image': 'https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=400',
+        'image':
+            'https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=400',
         'exercises': [
           {'name': 'Burpees', 'sets': 4, 'reps': 10, 'rest': 30},
           {'name': 'High Knees', 'sets': 4, 'reps': 30, 'rest': 30},
@@ -272,7 +284,8 @@ class SB {
         'difficulty': 'Beginner',
         'duration': 40,
         'calories': 180,
-        'image': 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400',
+        'image':
+            'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400',
         'exercises': [
           {'name': 'Sun Salutation', 'sets': 3, 'reps': 5, 'rest': 30},
           {'name': 'Warrior Pose', 'sets': 2, 'reps': 60, 'rest': 20},
@@ -287,7 +300,8 @@ class SB {
         'difficulty': 'Intermediate',
         'duration': 25,
         'calories': 220,
-        'image': 'https://images.unsplash.com/photo-1571945153237-4929e783af4a?w=400',
+        'image':
+            'https://images.unsplash.com/photo-1571945153237-4929e783af4a?w=400',
         'exercises': [
           {'name': 'Crunches', 'sets': 4, 'reps': 25, 'rest': 30},
           {'name': 'Leg Raises', 'sets': 3, 'reps': 20, 'rest': 40},
@@ -302,7 +316,8 @@ class SB {
         'difficulty': 'Advanced',
         'duration': 50,
         'calories': 340,
-        'image': 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400',
+        'image':
+            'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400',
         'exercises': [
           {'name': 'Bench Press', 'sets': 5, 'reps': 8, 'rest': 120},
           {'name': 'Overhead Press', 'sets': 4, 'reps': 10, 'rest': 90},
@@ -317,7 +332,8 @@ class SB {
         'difficulty': 'Beginner',
         'duration': 15,
         'calories': 80,
-        'image': 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400',
+        'image':
+            'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400',
         'exercises': [
           {'name': 'Neck Rolls', 'sets': 2, 'reps': 10, 'rest': 15},
           {'name': 'Shoulder Stretch', 'sets': 2, 'reps': 30, 'rest': 15},
