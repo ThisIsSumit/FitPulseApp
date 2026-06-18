@@ -20,6 +20,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
     final health = context.watch<HealthProvider>();
+    
 
     return Scaffold(
       backgroundColor: AppColors.bgDark,

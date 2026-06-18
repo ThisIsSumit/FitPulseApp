@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -27,13 +28,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final uid = SB.uid ?? '';
     // Live profile stream
     SB.profileStream(uid).listen((data) {
-      if (mounted && data.isNotEmpty)
+      if (mounted && data.isNotEmpty) {
         setState(() => _liveUser = AppUser.fromMap(data));
+      }
     });
     // Workout logs stream
     SB.workoutLogsStream(uid).listen((data) {
-      if (mounted)
+      if (mounted) {
         setState(() => _logs = data.map(WorkoutLog.fromMap).toList());
+      }
     });
   }
 
@@ -282,11 +285,23 @@ class _WorkoutHistoryChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     final Map<int, int> dayCounts = {for (var i = 0; i < 7; i++) i: 0};
+
     for (final l in logs) {
-      final diff = now.difference(l.date).inDays;
-      if (diff < 7) dayCounts[6 - diff] = (dayCounts[6 - diff] ?? 0) + 1;
+      final logDate = DateTime(l.date.year, l.date.month, l.date.day);
+      final diff = today.difference(logDate).inDays;
+      if (diff >= 0 && diff < 7) {
+        dayCounts[6 - diff] = (dayCounts[6 - diff] ?? 0) + 1;
+      }
     }
+
+    final dayLabels = List.generate(7, (i) {
+      final d = today.subtract(Duration(days: 6 - i));
+      return DateFormat('E')
+          .format(d)
+          .substring(0, 1); // single-letter, matches your current style
+    });
 
     return Container(
       height: 150,
@@ -312,8 +327,7 @@ class _WorkoutHistoryChart extends StatelessWidget {
           bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                   showTitles: true,
-                  getTitlesWidget: (v, _) => Text(
-                      ['M', 'T', 'W', 'T', 'F', 'S', 'S'][v.toInt() % 7],
+                  getTitlesWidget: (v, _) => Text(dayLabels[v.toInt() % 7],
                       style: const TextStyle(
                           color: AppColors.textMuted, fontSize: 11)))),
           leftTitles:
@@ -334,7 +348,7 @@ class _RecentActivity extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (logs.isEmpty)
+    if (logs.isEmpty) {
       return const Padding(
         padding: EdgeInsets.symmetric(horizontal: 20),
         child: EmptyState(
@@ -342,6 +356,7 @@ class _RecentActivity extends StatelessWidget {
             title: 'No workouts yet',
             subtitle: 'Complete a workout to see it here'),
       );
+    }
 
     return Column(
         children: logs.take(5).toList().asMap().entries.map((e) {
