@@ -49,7 +49,7 @@ class NotificationService {
   }) async {
     await init();
     await _plugin.zonedSchedule(
-      id:  workoutReminderId,
+      id: workoutReminderId,
       title: '💪 Time to move!',
       body: "Don't break your streak — log today's workout.",
       scheduledDate: _nextInstanceOf(hour, minute),

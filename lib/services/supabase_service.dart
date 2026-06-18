@@ -73,12 +73,16 @@ class SB {
 
   static Future<String> uploadAvatar(String id, File file) async {
     final path = '$id/avatar.jpg';
-    await storage.from('avatars').upload(
-          path,
-          file,
-          fileOptions:
-              const FileOptions(upsert: true, contentType: 'image/jpeg'),
-        );
+    try {
+      await storage.from('avatars').upload(
+            path,
+            file,
+            fileOptions:
+                const FileOptions(upsert: true, contentType: 'image/jpeg'),
+          );
+    } catch (e) {
+      print(e);
+    }
     final url = storage.from('avatars').getPublicUrl(path);
     await updateProfile(id, {'photo_url': url});
     return url;
