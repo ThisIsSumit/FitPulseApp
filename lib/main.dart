@@ -7,11 +7,6 @@ import 'theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'utils/router.dart';
 
-// ── Replace with your actual Supabase project values ──────────────────────
-// const _supabaseUrl = 'https://YOUR_PROJECT_REF.supabase.co';
-// const _supabaseAnonKey = 'YOUR_ANON_KEY';
-// ──────────────────────────────────────────────────────────────────────────
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(

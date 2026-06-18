@@ -27,19 +27,25 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
   }
 
   Future<void> _load() async {
+    await SB.seedWorkoutsIfEmpty(); // ← add this line temporarily
     final data = await SB.fetchWorkouts();
     if (mounted) setState(() => _all = data.map(Workout.fromMap).toList());
   }
 
   List<Workout> get _filtered {
     var list = _all ?? [];
-    if (_selected != 'All') list = list.where((w) => w.category == _selected).toList();
-    if (_search.isNotEmpty) list = list.where((w) => w.name.toLowerCase().contains(_search)).toList();
+    if (_selected != 'All')
+      list = list.where((w) => w.category == _selected).toList();
+    if (_search.isNotEmpty)
+      list = list.where((w) => w.name.toLowerCase().contains(_search)).toList();
     return list;
   }
 
   @override
-  void dispose() { _searchCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,41 +61,58 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
             style: AppTextStyles.bodyLarge,
             decoration: InputDecoration(
               hintText: 'Search workouts...',
-              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textMuted),
-              suffixIcon: _search.isNotEmpty ? IconButton(
-                icon: const Icon(Icons.clear_rounded, color: AppColors.textMuted),
-                onPressed: () { _searchCtrl.clear(); setState(() => _search = ''); },
-              ) : null,
+              prefixIcon:
+                  const Icon(Icons.search_rounded, color: AppColors.textMuted),
+              suffixIcon: _search.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear_rounded,
+                          color: AppColors.textMuted),
+                      onPressed: () {
+                        _searchCtrl.clear();
+                        setState(() => _search = '');
+                      },
+                    )
+                  : null,
             ),
           ),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-          child: SizedBox(height: 38, child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            scrollDirection: Axis.horizontal,
-            itemCount: _categories.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (_, i) => CategoryChip(
-              label: _categories[i],
-              selected: _selected == _categories[i],
-              onTap: () => setState(() => _selected = _categories[i]),
-            ),
-          )),
+          child: SizedBox(
+              height: 38,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                scrollDirection: Axis.horizontal,
+                itemCount: _categories.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (_, i) => CategoryChip(
+                  label: _categories[i],
+                  selected: _selected == _categories[i],
+                  onTap: () => setState(() => _selected = _categories[i]),
+                ),
+              )),
         ),
         const SizedBox(height: 16),
-        Expanded(child: _all == null
-          ? _LoadingGrid()
-          : _filtered.isEmpty
-            ? const EmptyState(emoji: '🔍', title: 'No results', subtitle: 'Try a different filter')
-            : GridView.builder(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, childAspectRatio: 0.75,
-                  crossAxisSpacing: 14, mainAxisSpacing: 14),
-                itemCount: _filtered.length,
-                itemBuilder: (_, i) => _WorkoutGridCard(workout: _filtered[i], index: i),
-              ),
+        Expanded(
+          child: _all == null
+              ? _LoadingGrid()
+              : _filtered.isEmpty
+                  ? const EmptyState(
+                      emoji: '🔍',
+                      title: 'No results',
+                      subtitle: 'Try a different filter')
+                  : GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.75,
+                              crossAxisSpacing: 14,
+                              mainAxisSpacing: 14),
+                      itemCount: _filtered.length,
+                      itemBuilder: (_, i) =>
+                          _WorkoutGridCard(workout: _filtered[i], index: i),
+                    ),
         ),
       ]),
     );
@@ -106,34 +129,60 @@ class _WorkoutGridCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.push('/workouts/${workout.id}', extra: workout),
       child: Container(
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: AppColors.bgCard),
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20), color: AppColors.bgCard),
         clipBehavior: Clip.antiAlias,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(child: Stack(children: [
-            Positioned.fill(child: workout.image.isNotEmpty
-                ? Image.network(workout.image, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(color: AppColors.bgElevated))
-                : Container(color: AppColors.bgElevated)),
-            Positioned.fill(child: Container(decoration: const BoxDecoration(
-                gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black54])))),
-            Positioned(top: 10, right: 10, child: DifficultyBadge(level: workout.difficulty)),
+          Expanded(
+              child: Stack(children: [
+            Positioned.fill(
+                child: workout.image.isNotEmpty
+                    ? Image.network(workout.image,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Container(color: AppColors.bgElevated))
+                    : Container(color: AppColors.bgElevated)),
+            Positioned.fill(
+                child: Container(
+                    decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Colors.transparent, Colors.black54])))),
+            Positioned(
+                top: 10,
+                right: 10,
+                child: DifficultyBadge(level: workout.difficulty)),
           ])),
-          Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(workout.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary), maxLines: 2, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 6),
-            Row(children: [
-              const Icon(Icons.timer_outlined, size: 12, color: AppColors.textMuted),
-              const SizedBox(width: 3),
-              Text('${workout.duration}m', style: AppTextStyles.caption),
-              const SizedBox(width: 8),
-              const Icon(Icons.local_fire_department_rounded, size: 12, color: AppColors.error),
-              const SizedBox(width: 3),
-              Text('${workout.calories}', style: AppTextStyles.caption),
-            ]),
-          ])),
+          Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(workout.name,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: AppColors.textPrimary),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 6),
+                    Row(children: [
+                      const Icon(Icons.timer_outlined,
+                          size: 12, color: AppColors.textMuted),
+                      const SizedBox(width: 3),
+                      Text('${workout.duration}m',
+                          style: AppTextStyles.caption),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.local_fire_department_rounded,
+                          size: 12, color: AppColors.error),
+                      const SizedBox(width: 3),
+                      Text('${workout.calories}', style: AppTextStyles.caption),
+                    ]),
+                  ])),
         ]),
-      ).animate()
+      )
+          .animate()
           .fadeIn(delay: (index * 60).ms, duration: 400.ms)
           .scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1)),
     );
@@ -146,9 +195,13 @@ class _LoadingGrid extends StatelessWidget {
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2, childAspectRatio: 0.75, crossAxisSpacing: 14, mainAxisSpacing: 14),
+          crossAxisCount: 2,
+          childAspectRatio: 0.75,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 14),
       itemCount: 6,
-      itemBuilder: (_, __) => const ShimmerBox(width: double.infinity, height: double.infinity, borderRadius: 20),
+      itemBuilder: (_, __) => const ShimmerBox(
+          width: double.infinity, height: double.infinity, borderRadius: 20),
     );
   }
 }
