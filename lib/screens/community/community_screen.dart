@@ -198,12 +198,15 @@ class _PostCardState extends State<_PostCard> {
               borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(20),
                   bottomRight: Radius.circular(20)),
-              child: Image.network(
-                widget.post.imageUrl!,
+              child: SizedBox(
                 width: double.infinity,
-                height: 200,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                height: MediaQuery.of(context).size.width * 0.6,
+                child: Image.network(
+                  widget.post.imageUrl!,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
               ),
             ),
 
