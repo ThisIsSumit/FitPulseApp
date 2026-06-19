@@ -42,108 +42,56 @@ class SettingsScreen extends StatelessWidget {
           onTap: () => _showPrivacyInfo(context),
         ),
         const SizedBox(height: 20),
-       _SectionLabel(label: 'Notifications'),
-_SettingsTile(
-  icon: Icons.notifications_active_outlined,
-  label: 'Send Test Notification',
-  onTap: () async {
-    final granted = await NotificationService.requestPermission();
-    if (!granted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Permission denied'),
-          backgroundColor: AppColors.error));
-      return;
-    }
-    await NotificationService.showTestNotification();
-  },
-),
-// ── TEMPORARY DEBUG TILES — remove once notifications confirmed working ──
-_SettingsTile(
-  icon: Icons.alarm_outlined,
-  label: 'Check Exact Alarm Permission',
-  onTap: () async {
-    final allowed = await NotificationService.canScheduleExactAlarms();
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(allowed
-          ? '✅ Exact alarms ALLOWED'
-          : '❌ Exact alarms DENIED — tap action to open settings'),
-      action: allowed
-          ? null
-          : SnackBarAction(
-              label: 'Open Settings',
-              onPressed: () => NotificationService.requestExactAlarmPermission(),
-            ),
-    ));
-  },
-),_SettingsTile(
-  icon: Icons.bug_report_outlined,
-  label: 'Debug: Verify Workout Reminder',
-  onTap: () async {
-    await NotificationService.debugWorkoutReminder();
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text('Check console for pending reminder status'),
-    ));
-  },
-),
-_SettingsTile(
-  icon: Icons.timer_outlined,
-  label: 'Schedule Test (10s)',
-  onTap: () async {
-    await NotificationService.scheduleTestIn(10);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text('Scheduled — check notification tray in 10 seconds, watch console'),
-    ));
-  },
-),
+        _SectionLabel(label: 'Notifications'),
+
 // ── END TEMPORARY DEBUG TILES ──
-_ToggleTile(
-  icon: Icons.notifications_outlined,
-  label: 'Push Notifications',
-  value: settings.pushNotifications,
-  onChanged: (v) async {
-    final ok = await settings.setPushNotifications(v);
-    if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Notification permission denied. Enable it in system settings.'),
-        backgroundColor: AppColors.warning,
-      ));
-    }
-  },
-),
-_ToggleTile(
-  icon: Icons.fitness_center_outlined,
-  label: 'Workout Reminders',
-  value: settings.workoutReminders,
-  onChanged: settings.pushNotifications
-      ? (v) => settings.setWorkoutReminders(v)
-      : null,
-),
-if (settings.workoutReminders && settings.pushNotifications)
-  _SettingsTile(
-    icon: Icons.schedule_outlined,
-    label: 'Reminder Time',
-    trailing: Text(settings.reminderTime.format(context),
-        style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
-    onTap: () async {
-      final picked = await showTimePicker(
-        context: context,
-        initialTime: settings.reminderTime,
-        builder: (context, child) => Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.primary,
-              surface: AppColors.bgCard,
-            ),
-          ),
-          child: child!,
+        _ToggleTile(
+          icon: Icons.notifications_outlined,
+          label: 'Push Notifications',
+          value: settings.pushNotifications,
+          onChanged: (v) async {
+            final ok = await settings.setPushNotifications(v);
+            if (!ok && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text(
+                    'Notification permission denied. Enable it in system settings.'),
+                backgroundColor: AppColors.warning,
+              ));
+            }
+          },
         ),
-      );
-      if (picked != null) await settings.setReminderTime(picked);
-    },
-  ),
+        _ToggleTile(
+          icon: Icons.fitness_center_outlined,
+          label: 'Workout Reminders',
+          value: settings.workoutReminders,
+          onChanged: settings.pushNotifications
+              ? (v) => settings.setWorkoutReminders(v)
+              : null,
+        ),
+        if (settings.workoutReminders && settings.pushNotifications)
+          _SettingsTile(
+            icon: Icons.schedule_outlined,
+            label: 'Reminder Time',
+            trailing: Text(settings.reminderTime.format(context),
+                style: const TextStyle(
+                    color: AppColors.primary, fontWeight: FontWeight.w600)),
+            onTap: () async {
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: settings.reminderTime,
+                builder: (context, child) => Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: const ColorScheme.dark(
+                      primary: AppColors.primary,
+                      surface: AppColors.bgCard,
+                    ),
+                  ),
+                  child: child!,
+                ),
+              );
+              if (picked != null) await settings.setReminderTime(picked);
+            },
+          ),
         _ToggleTile(
           icon: Icons.group_outlined,
           label: 'Community Updates',
