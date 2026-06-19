@@ -3,7 +3,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tzdata;
 
-/// Handles all local notification scheduling: permissions, channels, and timers.
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -12,26 +11,66 @@ class NotificationService {
 
   static const int workoutReminderId = 1001;
   static const int communityUpdateId = 2001;
+  static const int testScheduleId = 8888;
+  static const int testInstantId = 9999;
 
-  /// Call once at app startup.
   static Future<void> init() async {
     if (_initialized) return;
     tzdata.initializeTimeZones();
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings(
-      requestAlertPermission: false, // we ask explicitly via permission_handler
+      requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
     );
     const initSettings =
         InitializationSettings(android: androidInit, iOS: iosInit);
 
-    await _plugin.initialize(settings: initSettings);
+    // NOTE: positional argument, not `settings:`
+    await _plugin.initialize(
+      settings: initSettings,
+      onDidReceiveNotificationResponse: (response) {
+        // Handle notification tap if needed later
+      },
+    );
+
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'workout_reminders',
+          'Workout Reminders',
+          description: 'Daily reminder to complete your workout',
+          importance: Importance.high,
+        ),
+      );
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'community_updates',
+          'Community Updates',
+          description: 'Likes, comments, and challenge updates',
+          importance: Importance.defaultImportance,
+        ),
+      );
+    }
+
     _initialized = true;
   }
 
-  /// Requests the OS-level notification permission. Returns true if granted.
+  /// Prints the exact pending workout reminder + its next trigger time, if any.
+  static Future<void> debugWorkoutReminder() async {
+    final pending = await _plugin.pendingNotificationRequests();
+    final reminder = pending.where((p) => p.id == workoutReminderId).toList();
+    print('🔍 Workout reminder pending count: ${reminder.length}');
+    if (reminder.isNotEmpty) {
+      print('🔍 Title: ${reminder.first.title}, Body: ${reminder.first.body}');
+    } else {
+      print('🔍 NO workout reminder is currently scheduled!');
+    }
+  }
+
   static Future<bool> requestPermission() async {
     final status = await Permission.notification.request();
     return status.isGranted;
@@ -42,12 +81,38 @@ class NotificationService {
     return status.isGranted;
   }
 
-  /// Schedules a daily repeating workout reminder at the given hour/minute (24h).
+  static Future<bool> canScheduleExactAlarms() async {
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin == null) return true;
+    final granted = await androidPlugin.canScheduleExactNotifications();
+    return granted ?? false;
+  }
+
+  static Future<void> requestExactAlarmPermission() async {
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await androidPlugin?.requestExactAlarmsPermission();
+  }
+
+  static Future<bool> requestIgnoreBatteryOptimization() async {
+    final status = await Permission.ignoreBatteryOptimizations.request();
+    return status.isGranted;
+  }
+
+  static Future<bool> isBatteryOptimizationIgnored() async {
+    final status = await Permission.ignoreBatteryOptimizations.status;
+    return status.isGranted;
+  }
+
   static Future<void> scheduleWorkoutReminder({
     required int hour,
     required int minute,
   }) async {
     await init();
+    final exactAllowed = await canScheduleExactAlarms();
+
+    // NOTE: all positional, not named — id, title, body, scheduledDate, details
     await _plugin.zonedSchedule(
       id: workoutReminderId,
       title: '💪 Time to move!',
@@ -63,17 +128,21 @@ class NotificationService {
         ),
         iOS: DarwinNotificationDetails(),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time, // repeats daily
+      androidScheduleMode: exactAllowed
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
     );
+
+    final pending = await _plugin.pendingNotificationRequests();
+    print(
+        '📋 [workout reminder] Pending: ${pending.map((p) => '${p.id}:${p.title}').toList()}');
   }
 
   static Future<void> cancelWorkoutReminder() async {
     await _plugin.cancel(id: workoutReminderId);
   }
 
-  /// Shows an immediate notification (used for community updates while app is foregrounded,
-  /// since we don't have a push server / FCM backend).
   static Future<void> showCommunityUpdate({
     required String title,
     required String body,
@@ -96,6 +165,60 @@ class NotificationService {
     );
   }
 
+  /// Fires instantly — confirms permission + channel + icon all work.
+  static Future<void> showTestNotification() async {
+    await init();
+    await _plugin.show(
+      id: testInstantId,
+      title: '✅ Notifications working!',
+      body: 'If you see this, your setup is correct.',
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'workout_reminders',
+          'Workout Reminders',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+    );
+  }
+
+  /// Schedules a one-off notification N seconds from now — isolates
+  /// zonedSchedule() + exact-alarm behavior from the 24h daily reminder.
+  static Future<void> scheduleTestIn(int seconds) async {
+    await init();
+    final scheduledTime =
+        tz.TZDateTime.now(tz.local).add(Duration(seconds: seconds));
+    final exactAllowed = await canScheduleExactAlarms();
+
+    print(
+        '🔔 Scheduling test for $scheduledTime (exact allowed: $exactAllowed)');
+
+    await _plugin.zonedSchedule(
+      id: testScheduleId,
+      title: '⏰ Scheduled test fired!',
+      body: 'zonedSchedule() is working correctly.',
+      scheduledDate: scheduledTime,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'workout_reminders',
+          'Workout Reminders',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: exactAllowed
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle,
+    );
+
+    final pending = await _plugin.pendingNotificationRequests();
+    print(
+        '📋 [test] Pending: ${pending.map((p) => '${p.id}:${p.title}').toList()}');
+  }
+
   static Future<void> cancelAll() => _plugin.cancelAll();
 
   static tz.TZDateTime _nextInstanceOf(int hour, int minute) {
@@ -105,6 +228,7 @@ class NotificationService {
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
+    print(scheduled);
     return scheduled;
   }
 }

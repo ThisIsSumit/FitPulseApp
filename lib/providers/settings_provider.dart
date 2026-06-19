@@ -61,15 +61,19 @@ class SettingsProvider extends ChangeNotifier {
     if (value) {
       final granted = await NotificationService.requestPermission();
       if (!granted) return false;
+
+      // Android 12+ needs this separately, opens system settings if not granted
+      final exactAllowed = await NotificationService.canScheduleExactAlarms();
+      if (!exactAllowed) {
+        await NotificationService.requestExactAlarmPermission();
+      }
     } else {
-      // Turning off the master switch disables everything underneath it
       await NotificationService.cancelAll();
     }
     _pushNotifications = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kPushNotifications, value);
 
-    // Re-sync dependent toggles
     if (value && _workoutReminders) {
       await NotificationService.scheduleWorkoutReminder(
         hour: _reminderTime.hour,
