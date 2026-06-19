@@ -66,25 +66,35 @@ class NotificationService {
     final hours = offset.inHours;
     final minutes = offset.inMinutes.remainder(60).abs();
 
-    // Map common offsets to IANA identifiers the `timezone` package recognizes.
-    // Using Etc/GMT+N is a safe universal fallback that doesn't need exact
-    // city-level timezone names — it has the correct UTC offset, which is
-    // all that matters for scheduling.
+    if (minutes != 0) {
+      // Half-hour or quarter-hour offsets (e.g. IST = UTC+5:30) which Etc/GMT can't express.
+      // Use a known IANA zone that matches common offsets instead.
+      final fallbackZone = _bestMatchTimezone(offset);
+      try {
+        tz.setLocalLocation(tz.getLocation(fallbackZone));
+        print('🌍 Local timezone set via offset fallback to: $fallbackZone');
+        return;
+      } catch (e) {
+        // If the location is missing, let it fall through to UTC
+      }
+    }
+
     final sign = offset.isNegative ? '+' : '-'; // Etc/GMT signs are inverted
-    final tzName = minutes == 0
-        ? 'Etc/GMT$sign${hours.abs()}'
-        : 'Etc/GMT$sign${hours.abs()}'; // Etc/GMT doesn't support :30 offsets
+    final tzName = 'Etc/GMT$sign${hours.abs()}';
 
     try {
       tz.setLocalLocation(tz.getLocation(tzName));
       print(
           '🌍 Local timezone set via offset to: $tzName (UTC${offset.isNegative ? '-' : '+'}${hours.abs()}h)');
     } catch (e) {
-      // Fallback for half-hour offsets (e.g. IST = UTC+5:30) which Etc/GMT can't express.
-      // Use a known IANA zone that matches common offsets instead.
       final fallbackZone = _bestMatchTimezone(offset);
-      tz.setLocalLocation(tz.getLocation(fallbackZone));
-      print('🌍 Local timezone set via fallback to: $fallbackZone');
+      try {
+        tz.setLocalLocation(tz.getLocation(fallbackZone));
+        print('🌍 Local timezone set via fallback to: $fallbackZone');
+      } catch (_) {
+        tz.setLocalLocation(tz.UTC);
+        print('🌍 Local timezone fallback failed, using UTC');
+      }
     }
   }
 
