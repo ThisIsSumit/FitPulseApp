@@ -24,7 +24,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider.value(value: healthProvider),
-         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProxyProvider<HealthProvider, NutritionProvider>(
           create: (_) => NutritionProvider(healthProvider: healthProvider),
           update: (_, health, prev) =>

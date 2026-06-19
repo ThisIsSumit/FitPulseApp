@@ -16,7 +16,9 @@ class NotificationService {
 
   static Future<void> init() async {
     if (_initialized) return;
+
     tzdata.initializeTimeZones();
+    _setLocalTimezoneFromOffset();
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings(
@@ -27,12 +29,9 @@ class NotificationService {
     const initSettings =
         InitializationSettings(android: androidInit, iOS: iosInit);
 
-    // NOTE: positional argument, not `settings:`
     await _plugin.initialize(
       settings: initSettings,
-      onDidReceiveNotificationResponse: (response) {
-        // Handle notification tap if needed later
-      },
+      onDidReceiveNotificationResponse: (response) {},
     );
 
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
@@ -57,6 +56,59 @@ class NotificationService {
     }
 
     _initialized = true;
+  }
+
+  /// Sets tz.local using the device's UTC offset — no native plugin needed.
+  /// This avoids relying on flutter_timezone (which requires a Gradle/network
+  /// fetch that can fail on restricted networks).
+  static void _setLocalTimezoneFromOffset() {
+    final offset = DateTime.now().timeZoneOffset;
+    final hours = offset.inHours;
+    final minutes = offset.inMinutes.remainder(60).abs();
+
+    // Map common offsets to IANA identifiers the `timezone` package recognizes.
+    // Using Etc/GMT+N is a safe universal fallback that doesn't need exact
+    // city-level timezone names — it has the correct UTC offset, which is
+    // all that matters for scheduling.
+    final sign = offset.isNegative ? '+' : '-'; // Etc/GMT signs are inverted
+    final tzName = minutes == 0
+        ? 'Etc/GMT$sign${hours.abs()}'
+        : 'Etc/GMT$sign${hours.abs()}'; // Etc/GMT doesn't support :30 offsets
+
+    try {
+      tz.setLocalLocation(tz.getLocation(tzName));
+      print(
+          '🌍 Local timezone set via offset to: $tzName (UTC${offset.isNegative ? '-' : '+'}${hours.abs()}h)');
+    } catch (e) {
+      // Fallback for half-hour offsets (e.g. IST = UTC+5:30) which Etc/GMT can't express.
+      // Use a known IANA zone that matches common offsets instead.
+      final fallbackZone = _bestMatchTimezone(offset);
+      tz.setLocalLocation(tz.getLocation(fallbackZone));
+      print('🌍 Local timezone set via fallback to: $fallbackZone');
+    }
+  }
+
+  /// Matches common UTC offsets (including half-hour ones like IST) to a
+  /// known IANA timezone name as a fallback when Etc/GMT can't express it.
+  static String _bestMatchTimezone(Duration offset) {
+    final totalMinutes = offset.inMinutes;
+    switch (totalMinutes) {
+      case 330:
+        return 'Asia/Kolkata'; // UTC+5:30 (India)
+      case 345:
+        return 'Asia/Kathmandu'; // UTC+5:45
+      case 570:
+        return 'Australia/Darwin'; // UTC+9:30
+      case 630:
+        return 'Australia/Adelaide'; // UTC+10:30
+      case -210:
+        return 'America/St_Johns'; // UTC-3:30
+      default:
+        // No half-hour match — use the nearest whole-hour Etc/GMT zone.
+        final hours = (totalMinutes / 60).round();
+        final sign = hours < 0 ? '+' : '-';
+        return 'Etc/GMT$sign${hours.abs()}';
+    }
   }
 
   /// Prints the exact pending workout reminder + its next trigger time, if any.
