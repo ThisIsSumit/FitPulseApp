@@ -194,42 +194,57 @@ class _PostCardState extends State<_PostCard> {
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.bgCard,
-        title: const Text('Delete Post?',
-            style: TextStyle(color: AppColors.textPrimary)),
-        content: const Text(
-          'This cannot be undone.',
-          style: TextStyle(color: AppColors.textSecondary),
+   final confirmed = await showDialog<bool>(
+  context: context,
+  builder: (dialogContext) {
+    return AlertDialog(
+      backgroundColor: AppColors.bgCard,
+      title: const Text('Delete Post?'),
+      content: const Text('This cannot be undone.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('Cancel'),
         ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child:
-                const Text('Delete', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('Delete'),
+        ),
+      ],
+    );
+  },
+);
+
+   if (confirmed == true) {
+  try {
+    await SB.deletePost(
+      widget.post.id,
+      imageUrl: widget.post.imageUrl,
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Post deleted'),
+        backgroundColor: AppColors.success,
       ),
     );
 
-    if (confirmed == true) {
-      try {
-        await SB.deletePost(widget.post.id, imageUrl: widget.post.imageUrl);
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Failed to delete post'),
-                backgroundColor: AppColors.error),
-          );
-        }
-      }
-    }
+    // No navigation needed
+    // Stream will automatically remove the post from the list
+
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Failed to delete post'),
+        backgroundColor: AppColors.error,
+      ),
+    );
+  }
+}
   }
 
   @override
@@ -393,7 +408,7 @@ class _ChallengesTabState extends State<_ChallengesTab> {
   @override
   void initState() {
     super.initState();
-    _ensureSeeded(); // ← add this line
+    _ensureSeeded(); // ← add this linede
     SB.challengesStream().listen((data) {
       if (mounted) {
         setState(() => _challenges = data.map(Challenge.fromMap).toList());

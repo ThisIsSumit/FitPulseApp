@@ -84,7 +84,8 @@ GoRouter buildRouter(AuthProvider authProvider) {
       GoRoute(
         path: '/community/create-post',
         parentNavigatorKey: _rootKey,
-        builder: (_, __) => const CreatePostScreen(),
+        builder: (_, state) =>
+            CreatePostScreen(editingPost: state.extra as Post?),
       ),
       GoRoute(
         path: '/settings',

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
@@ -107,10 +108,19 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           padding: const EdgeInsets.only(top: 12),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.network(widget.post.imageUrl!,
-                                width: double.infinity,
+                            child: CachedNetworkImage(
+                              imageUrl: widget.post.imageUrl!,
+                              width: double.infinity,
+                              height: 200,
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => Container(
                                 height: 200,
-                                fit: BoxFit.cover),
+                                color: AppColors.bgElevated,
+                                child: const Center(
+                                    child: CircularProgressIndicator(
+                                        color: AppColors.primary)),
+                              ),
+                            ),
                           ),
                         ),
                       const SizedBox(height: 12),
