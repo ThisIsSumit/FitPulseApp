@@ -6,6 +6,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../services/supabase_service.dart';
 import '../../models/models.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -134,6 +135,103 @@ class _PostCardState extends State<_PostCard> {
     }
   }
 
+  void _showPostOptions(BuildContext context) {
+    final isOwner = widget.post.uid == (SB.uid ?? '');
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.bgCard,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.bgSurface,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (isOwner) ...[
+              ListTile(
+                leading:
+                    const Icon(Icons.edit_outlined, color: AppColors.primary),
+                title: const Text('Edit Post',
+                    style: TextStyle(color: AppColors.textPrimary)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.push('/community/create-post', extra: widget.post);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded,
+                    color: AppColors.error),
+                title: const Text('Delete Post',
+                    style: TextStyle(color: AppColors.error)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _confirmDelete(context);
+                },
+              ),
+            ] else
+              ListTile(
+                leading:
+                    const Icon(Icons.flag_outlined, color: AppColors.textMuted),
+                title: const Text('Report Post',
+                    style: TextStyle(color: AppColors.textPrimary)),
+                onTap: () => Navigator.pop(ctx),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.bgCard,
+        title: const Text('Delete Post?',
+            style: TextStyle(color: AppColors.textPrimary)),
+        content: const Text(
+          'This cannot be undone.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child:
+                const Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await SB.deletePost(widget.post.id, imageUrl: widget.post.imageUrl);
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Failed to delete post'),
+                backgroundColor: AppColors.error),
+          );
+        }
+      }
+    }
+  }
+
   @override
   void didUpdateWidget(covariant _PostCard oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -182,8 +280,11 @@ class _PostCardState extends State<_PostCard> {
                     ],
                   ),
                 ),
-                const Icon(Icons.more_horiz_rounded,
-                    color: AppColors.textMuted),
+                GestureDetector(
+                  onTap: () => _showPostOptions(context),
+                  child: const Icon(Icons.more_horiz_rounded,
+                      color: AppColors.textMuted),
+                ),
               ],
             ),
           ),
@@ -195,20 +296,30 @@ class _PostCardState extends State<_PostCard> {
           ),
 
           // Post image
+          // Post image
           if (widget.post.imageUrl != null)
             ClipRRect(
               borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(20),
                   bottomRight: Radius.circular(20)),
-              child: SizedBox(
+              child: CachedNetworkImage(
+                imageUrl: widget.post.imageUrl!,
                 width: double.infinity,
-                height: MediaQuery.of(context).size.width * 0.6,
-                child: Image.network(
-                  widget.post.imageUrl!,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                height: 200,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => Container(
+                  height: 200,
+                  color: AppColors.bgElevated,
+                  child: const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: AppColors.primary),
+                    ),
+                  ),
                 ),
+                errorWidget: (_, __, ___) => const SizedBox.shrink(),
               ),
             ),
 
@@ -282,11 +393,16 @@ class _ChallengesTabState extends State<_ChallengesTab> {
   @override
   void initState() {
     super.initState();
+    _ensureSeeded(); // ← add this line
     SB.challengesStream().listen((data) {
       if (mounted) {
         setState(() => _challenges = data.map(Challenge.fromMap).toList());
       }
     });
+  }
+
+  Future<void> _ensureSeeded() async {
+    await SB.seedChallengesIfEmpty();
   }
 
   @override
