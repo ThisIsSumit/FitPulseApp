@@ -1,3 +1,4 @@
+import 'package:fitness_app/screens/splash/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -25,11 +26,17 @@ final _shellKey = GlobalKey<NavigatorState>();
 GoRouter buildRouter(AuthProvider authProvider) {
   return GoRouter(
     navigatorKey: _rootKey,
-    initialLocation: '/onboarding',
+    initialLocation: '/splash',
     refreshListenable: authProvider,
     redirect: (context, state) {
-      final loggedIn = authProvider.isLoggedIn;
       final loc = state.matchedLocation;
+
+      // Splash screen handles its own navigation once init work finishes —
+      // exempt it from the auth redirect entirely so it never gets bounced
+      // away mid-load.
+      if (loc == '/splash') return null;
+
+      final loggedIn = authProvider.isLoggedIn;
       final publicRoutes = [
         '/onboarding',
         '/login',
@@ -37,11 +44,13 @@ GoRouter buildRouter(AuthProvider authProvider) {
         '/forgot-password'
       ];
       final isPublic = publicRoutes.any((r) => loc.startsWith(r));
+
       if (!loggedIn && !isPublic) return '/login';
       if (loggedIn && isPublic) return '/home';
       return null;
     },
     routes: [
+      GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(
           path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
@@ -80,11 +89,10 @@ GoRouter buildRouter(AuthProvider authProvider) {
       GoRoute(
         path: '/settings',
         parentNavigatorKey: _rootKey,
-
-       builder: (context, state) {
-    final user = state.extra as AppUser;
-    return SettingsScreen(user: user);
-  },
+        builder: (context, state) {
+          final user = state.extra as AppUser;
+          return SettingsScreen(user: user);
+        },
       ),
 
       // Shell

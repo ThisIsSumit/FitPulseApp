@@ -92,14 +92,14 @@ class SettingsScreen extends StatelessWidget {
               if (picked != null) await settings.setReminderTime(picked);
             },
           ),
-        _ToggleTile(
-          icon: Icons.group_outlined,
-          label: 'Community Updates',
-          value: settings.communityUpdates,
-          onChanged: settings.pushNotifications
-              ? (v) => settings.setCommunityUpdates(v)
-              : null,
-        ),
+        // _ToggleTile(
+        //   icon: Icons.group_outlined,
+        //   label: 'Community Updates',
+        //   value: settings.communityUpdates,
+        //   onChanged: settings.pushNotifications
+        //       ? (v) => settings.setCommunityUpdates(v)
+        //       : null,
+        // ),
         const SizedBox(height: 20),
         _SectionLabel(label: 'Preferences'),
         _SettingsTile(
