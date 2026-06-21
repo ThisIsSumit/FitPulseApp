@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../theme/app_theme.dart';
-import '../home/home_screen.dart';
-import '../workout/workouts_screen.dart';
-import '../nutrition/nutrition_screen.dart';
-import '../community/community_screen.dart';
-import '../profile/profile_screen.dart';
 
 class MainShell extends StatefulWidget {
   final Widget child;
@@ -17,8 +11,6 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  int _selectedIndex = 0;
-
   final _tabs = [
     (path: '/home', icon: Icons.home_rounded, label: 'Home'),
     (path: '/workouts', icon: Icons.fitness_center_rounded, label: 'Workouts'),
@@ -28,12 +20,17 @@ class _MainShellState extends State<MainShell> {
   ];
 
   void _onTap(int i) {
-    setState(() => _selectedIndex = i);
     context.go(_tabs[i].path);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Determine selected tab based on current route
+    final String location =
+        GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
+    final int selectedIndex =
+        _tabs.indexWhere((t) => location.startsWith(t.path));
+    final int effectiveIndex = selectedIndex >= 0 ? selectedIndex : 0;
     return Scaffold(
       body: widget.child,
       bottomNavigationBar: Container(
@@ -49,7 +46,7 @@ class _MainShellState extends State<MainShell> {
               children: _tabs.asMap().entries.map((e) {
                 final i = e.key;
                 final t = e.value;
-                final selected = _selectedIndex == i;
+                final selected = effectiveIndex == i;
                 return GestureDetector(
                   onTap: () => _onTap(i),
                   child: AnimatedContainer(
@@ -69,7 +66,8 @@ class _MainShellState extends State<MainShell> {
                         Icon(
                           t.icon,
                           size: 22,
-                          color: selected ? AppColors.bgDark : AppColors.textMuted,
+                          color:
+                              selected ? AppColors.bgDark : AppColors.textMuted,
                         ),
                         if (selected) ...[
                           const SizedBox(width: 6),
