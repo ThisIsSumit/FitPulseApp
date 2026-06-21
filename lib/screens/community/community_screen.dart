@@ -635,7 +635,10 @@ class _LeaderRow extends StatelessWidget {
                       fontWeight: FontWeight.w700),
                   textAlign: TextAlign.center)),
           const SizedBox(width: 12),
-          UserAvatar(photoUrl: user.photoUrl, name: user.name, radius: 20),
+          GestureDetector(
+              onTap: () => context.push('/profile/${user.id}'),
+              child: UserAvatar(
+                  photoUrl: user.photoUrl, name: user.name, radius: 20)),
           const SizedBox(width: 12),
           Expanded(
               child: Column(
