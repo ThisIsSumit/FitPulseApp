@@ -1,3 +1,4 @@
+import 'package:fitness_app/screens/profile/public_profile_screen.dart';
 import 'package:fitness_app/screens/splash/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -94,6 +95,12 @@ GoRouter buildRouter(AuthProvider authProvider) {
           final user = state.extra as AppUser;
           return SettingsScreen(user: user);
         },
+      ),
+      GoRoute(
+        path: '/profile/:uid',
+        parentNavigatorKey: _rootKey,
+        builder: (_, state) =>
+            PublicProfileScreen(uid: state.pathParameters['uid']!),
       ),
 
       // Shell

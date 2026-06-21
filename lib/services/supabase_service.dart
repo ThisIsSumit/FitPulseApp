@@ -155,6 +155,19 @@ class SB {
     return res;
   }
 
+  static Future<bool> toggleFollow(String targetUid) async {
+    final result =
+        await client.rpc('toggle_follow', params: {'target_uid': targetUid});
+    return result as bool;
+  }
+
+  static Future<
+      Map<String,
+          dynamic>?> fetchPublicProfile(String uid) => fetchProfile(
+      uid); // reuses existing method — profiles are already readable by all authenticated users
+
+  static Stream<Map<String, dynamic>> publicProfileStream(String uid) =>
+      profileStream(uid);
   static Future<void> toggleLike(
       String postId, List<String> currentLikes) async {
     final me = uid!;
@@ -243,31 +256,32 @@ class SB {
       'p_xp': xp,
     });
   }
-  static Future<void> deletePost(String postId, {String? imageUrl}) async {
-  // Delete the image from storage first (cleanup), if one exists
-  if (imageUrl != null && imageUrl.contains('post-images')) {
-    try {
-      final fileName = imageUrl.split('/').last;
-      await storage.from('post-images').remove([fileName]);
-    } catch (_) {
-      // Non-fatal — proceed with post deletion even if image cleanup fails
-    }
-  }
-  await client.from('posts').delete().eq('id', postId);
-}
 
-static Future<void> updatePost({
-  required String postId,
-  required String text,
-  required String type,
-  String? imageUrl,
-}) async {
-  await client.from('posts').update({
-    'text': text,
-    'type': type,
-    'image_url': imageUrl,
-  }).eq('id', postId);
-}
+  static Future<void> deletePost(String postId, {String? imageUrl}) async {
+    // Delete the image from storage first (cleanup), if one exists
+    if (imageUrl != null && imageUrl.contains('post-images')) {
+      try {
+        final fileName = imageUrl.split('/').last;
+        await storage.from('post-images').remove([fileName]);
+      } catch (_) {
+        // Non-fatal — proceed with post deletion even if image cleanup fails
+      }
+    }
+    await client.from('posts').delete().eq('id', postId);
+  }
+
+  static Future<void> updatePost({
+    required String postId,
+    required String text,
+    required String type,
+    String? imageUrl,
+  }) async {
+    await client.from('posts').update({
+      'text': text,
+      'type': type,
+      'image_url': imageUrl,
+    }).eq('id', postId);
+  }
 
   // ─── Seed Data ────────────────────────────────────────────────────────
   static Future<void> seedWorkoutsIfEmpty() async {

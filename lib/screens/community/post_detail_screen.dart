@@ -85,21 +85,26 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(children: [
-                        UserAvatar(photoUrl: photoUrl, name: name, radius: 22),
-                        const SizedBox(width: 12),
-                        Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(name,
-                                  style: const TextStyle(
-                                      color: AppColors.textPrimary,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 15)),
-                              Text(timeago.format(widget.post.createdAt),
-                                  style: AppTextStyles.caption),
-                            ]),
-                      ]),
+                      GestureDetector(
+                        onTap: () =>
+                            context.push('/profile/${widget.post.uid}'),
+                        child: Row(children: [
+                          UserAvatar(
+                              photoUrl: photoUrl, name: name, radius: 22),
+                          const SizedBox(width: 12),
+                          Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(name,
+                                    style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15)),
+                                Text(timeago.format(widget.post.createdAt),
+                                    style: AppTextStyles.caption),
+                              ]),
+                        ]),
+                      ),
                       const SizedBox(height: 12),
                       Text(widget.post.text,
                           style: AppTextStyles.bodyLarge.copyWith(height: 1.5)),
@@ -156,6 +161,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   final d = e.value;
                   final ui = d['user_info'] as Map<String, dynamic>? ?? {};
                   return _CommentTile(
+                    uid: ui['uid'] ?? '',
                     name: ui['name'] ?? 'User',
                     photoUrl: ui['photo_url'] ?? '',
                     text: d['text'] ?? '',
@@ -174,41 +180,44 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             color: AppColors.bgCard,
             border: Border(top: BorderSide(color: AppColors.bgSurface)),
           ),
-          child: Row(children: [
-            UserAvatar(
-                photoUrl: user?.photoUrl, name: user?.name ?? '', radius: 18),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                controller: _commentCtrl,
-                style: AppTextStyles.bodyLarge,
-                decoration: InputDecoration(
-                  hintText: 'Add a comment...',
-                  filled: true,
-                  fillColor: AppColors.bgElevated,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide.none,
+          child: GestureDetector(
+            onTap: () => context.push('/profile/${widget.post.uid}'),
+            child: Row(children: [
+              UserAvatar(
+                  photoUrl: user?.photoUrl, name: user?.name ?? '', radius: 18),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _commentCtrl,
+                  style: AppTextStyles.bodyLarge,
+                  decoration: InputDecoration(
+                    hintText: 'Add a comment...',
+                    filled: true,
+                    fillColor: AppColors.bgElevated,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                   ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: _sending ? null : _sendComment,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                    gradient: AppColors.primaryGradient,
-                    shape: BoxShape.circle),
-                child: const Icon(Icons.send_rounded,
-                    color: AppColors.bgDark, size: 18),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _sending ? null : _sendComment,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                      gradient: AppColors.primaryGradient,
+                      shape: BoxShape.circle),
+                  child: const Icon(Icons.send_rounded,
+                      color: AppColors.bgDark, size: 18),
+                ),
               ),
-            ),
-          ]),
+            ]),
+          ),
         ),
       ]),
     );
@@ -216,10 +225,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 }
 
 class _CommentTile extends StatelessWidget {
-  final String name, photoUrl, text;
+  final String uid,name, photoUrl, text;
   final int index;
   const _CommentTile(
-      {required this.name,
+      {required this.uid,
+      required this.name,
       required this.photoUrl,
       required this.text,
       required this.index});
@@ -228,33 +238,37 @@ class _CommentTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        UserAvatar(photoUrl: photoUrl, name: name, radius: 18),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: AppColors.bgElevated,
-              borderRadius: BorderRadius.only(
-                topRight: Radius.circular(16),
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
+      child: GestureDetector(
+        onTap: () => context.push('/profile/$uid'),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          UserAvatar(photoUrl: photoUrl, name: name, radius: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: const BoxDecoration(
+                color: AppColors.bgElevated,
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
               ),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name,
+                        style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13)),
+                    const SizedBox(height: 4),
+                    Text(text, style: AppTextStyles.bodyMedium),
+                  ]),
             ),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(name,
-                  style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13)),
-              const SizedBox(height: 4),
-              Text(text, style: AppTextStyles.bodyMedium),
-            ]),
           ),
-        ),
-      ]),
+        ]),
+      ),
     )
         .animate()
         .fadeIn(delay: (index * 50).ms, duration: 300.ms)

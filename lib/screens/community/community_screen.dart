@@ -194,57 +194,56 @@ class _PostCardState extends State<_PostCard> {
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
-   final confirmed = await showDialog<bool>(
-  context: context,
-  builder: (dialogContext) {
-    return AlertDialog(
-      backgroundColor: AppColors.bgCard,
-      title: const Text('Delete Post?'),
-      content: const Text('This cannot be undone.'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-          child: const Text('Delete'),
-        ),
-      ],
-    );
-  },
-);
-
-   if (confirmed == true) {
-  try {
-    await SB.deletePost(
-      widget.post.id,
-      imageUrl: widget.post.imageUrl,
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.bgCard,
+          title: const Text('Delete Post?'),
+          content: const Text('This cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
     );
 
-    if (!mounted) return;
+    if (confirmed == true) {
+      try {
+        await SB.deletePost(
+          widget.post.id,
+          imageUrl: widget.post.imageUrl,
+        );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Post deleted'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+        if (!mounted) return;
 
-    // No navigation needed
-    // Stream will automatically remove the post from the list
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Post deleted'),
+            backgroundColor: AppColors.success,
+          ),
+        );
 
-  } catch (e) {
-    if (!mounted) return;
+        // No navigation needed
+        // Stream will automatically remove the post from the list
+      } catch (e) {
+        if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Failed to delete post'),
-        backgroundColor: AppColors.error,
-      ),
-    );
-  }
-}
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to delete post'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -277,31 +276,32 @@ class _PostCardState extends State<_PostCard> {
           // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-            child: Row(
-              children: [
-                UserAvatar(photoUrl: photoUrl, name: name, radius: 20),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(name,
-                          style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14)),
-                      Text(timeago.format(widget.post.createdAt),
-                          style: AppTextStyles.caption),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => _showPostOptions(context),
-                  child: const Icon(Icons.more_horiz_rounded,
-                      color: AppColors.textMuted),
-                ),
-              ],
-            ),
+            child: Row(children: [
+              GestureDetector(
+                onTap: () => context.push('/profile/${widget.post.uid}'),
+                child: Row(children: [
+                  UserAvatar(photoUrl: photoUrl, name: name, radius: 20),
+                  const SizedBox(width: 10),
+                  Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name,
+                            style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14)),
+                        Text(timeago.format(widget.post.createdAt),
+                            style: AppTextStyles.caption),
+                      ]),
+                ]),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => _showPostOptions(context),
+                child: const Icon(Icons.more_horiz_rounded,
+                    color: AppColors.textMuted),
+              ),
+            ]),
           ),
 
           // Post text
